@@ -1,101 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import AdminDashboard from '../components/AdminDashboard';
+
+// This is the new, simpler Login component
+function TelegramLogin() {
+  const handleLogin = () => {
+    // This URL points to a function that starts the Telegram OAuth flow.
+    // We will create this function next.
+    window.location.href = `https://irissqrnhbgkibxciezw.supabase.co/functions/v1/telegram-auth-start`;
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+        <div className="bg-gray-800 p-8 rounded-lg shadow-lg text-center text-white">
+            <h1 className="text-2xl font-bold mb-6">Admin Panel</h1>
+            <button 
+              onClick={handleLogin} 
+              className="px-6 py-3 bg-blue-500 rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+            >
+                Login with Telegram
+            </button>
+        </div>
+    </div>
+  );
+}
+
 
 export default function AdminPage() {
-  const [user, setUser] = useState(null);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [productName, setProductName] = useState('');
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Check for a logged-in user when the page loads
   useEffect(() => {
-    const checkUser = async () => {
+    // Check for an active session when the page loads
+    const fetchSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
+      setSession(session);
+      setLoading(false);
     };
-    checkUser();
-  }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      setUser(data.user);
-    }
-  };
+    fetchSession();
 
-  const handleAddProduct = async (e) => {
-    e.preventDefault();
-    if (!productName) {
-      alert('Product name is required');
-      return;
-    }
-
-    const { data, error } = await supabase.functions.invoke('admin-actions', {
-      body: {
-        action: 'addProduct',
-        payload: { name: productName, is_active: true /* Add other fields here */ },
-      },
+    // Listen for changes in authentication state (e.g., after login)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
     });
 
-    if (error) {
-      alert('Error adding product: ' + error.message);
-    } else {
-      alert('Product added successfully!');
-      setProductName(''); // Clear the form
-    }
-  };
+    return () => subscription.unsubscribe();
+  }, []);
 
-  // If no user is logged in, show the login form
-  if (!user) {
-    return (
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold">Admin Login</h1>
-        <form onSubmit={handleLogin} className="mt-4 space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-2 border rounded"
-          />
-          <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded">
-            Log In
-          </button>
-        </form>
-      </div>
-    );
+  if (loading) {
+    return <div className="text-white text-center p-12">Loading...</div>;
   }
 
-  // If user is logged in, show the admin panel
+  // If there is no session, show the login button.
+  // Otherwise, show the full admin dashboard.
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold">Admin Panel</h1>
-      <p>Welcome, {user.email}</p>
-      
-      <form onSubmit={handleAddProduct} className="mt-8 space-y-4">
-        <h2 className="text-xl font-semibold">Add New Product</h2>
-        <input
-          type="text"
-          placeholder="New Product Name"
-          value={productName}
-          onChange={(e) => setProductName(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
-        {/* Add more inputs for price, description, etc. here */}
-        <button type="submit" className="px-4 py-2 bg-green-500 text-white rounded">
-          Add Product
-        </button>
-      </form>
+    <div>
+      {!session ? <TelegramLogin /> : <AdminDashboard user={session.user} />}
     </div>
   );
 }
