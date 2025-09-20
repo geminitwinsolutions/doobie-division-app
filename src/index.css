@@ -25,3 +25,43 @@ body::before {
 .font-display {
   font-family: 'Chewy', sans-serif; /* Make sure to import this font in your index.html */
 }
+/* Card Flip Styles */
+.flip-card {
+  background-color: transparent;
+  min-height: 420px;
+  perspective: 1000px; /* Gives the 3D effect */
+}
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+.flip-card-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden; /* Safari */
+  backface-visibility: hidden;
+  border-radius: 0.75rem; /* rounded-xl */
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+.flip-card-front {
+  background-size: cover;
+  background-position: center;
+}
+.flip-card-back {
+  transform: rotateY(180deg);
+  background-color: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(8px);
+}
+.card-flipper {
+  @apply text-xs font-bold uppercase tracking-wider bg-black/50 p-2 w-full hover:bg-emerald-600 transition-colors;
+}
