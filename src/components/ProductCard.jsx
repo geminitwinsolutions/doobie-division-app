@@ -1,9 +1,10 @@
 // src/components/ProductCard.jsx
 import React, { useState } from 'react';
+import { useCart } from '../contexts/CartContext'; // Import the hook
 
 export default function ProductCard({ product }) {
   const [isFlipped, setIsFlipped] = useState(false);
-  const { addToCart } = useCart();
+  const { addToCart } = useCart(); // Now 'useCart' is defined
 
   // Helper to get the first price from the JSONB 'prices' object
   const getDisplayPrice = () => {
