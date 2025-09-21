@@ -1,8 +1,9 @@
+// src/components/AdminDashboard.jsx
 import React, { useState } from 'react';
 import ProductManager from './admin/ProductManager';
 import OptionManager from './admin/OptionManager';
-import MenuManager from './admin/MenuManager'; // Import our new component
-
+import MenuManager from './admin/MenuManager';
+import AdminManager from './admin/AdminManager'; // Import the new component
 
 export default function AdminDashboard({ user }) {
   const [activeTab, setActiveTab] = useState('products');
@@ -15,6 +16,8 @@ export default function AdminDashboard({ user }) {
         return <OptionManager />;
       case 'menuStructure':
         return <MenuManager />;
+      case 'manageAdmins': // Add the new case
+        return <AdminManager />;
       default:
         return <ProductManager />;
     }
@@ -24,7 +27,7 @@ export default function AdminDashboard({ user }) {
     <div className="container mx-auto p-4 text-white">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Admin Panel</h1>
-        <p className="text-gray-300">Welcome, {user.email}</p>
+        <p className="text-gray-300">Welcome, {user.user_metadata.first_name}</p>
       </div>
 
       {/* Tab Navigation */}
@@ -32,7 +35,7 @@ export default function AdminDashboard({ user }) {
         <TabButton name="products" activeTab={activeTab} onClick={setActiveTab}>Products</TabButton>
         <TabButton name="options" activeTab={activeTab} onClick={setActiveTab}>Options</TabButton>
         <TabButton name="menuStructure" activeTab={activeTab} onClick={setActiveTab}>Menu Structure</TabButton>
-        {/* Add more tabs here */}
+        <TabButton name="manageAdmins" activeTab={activeTab} onClick={setActiveTab}>Manage Admins</TabButton>
       </div>
 
       {/* Active Tab Content */}
