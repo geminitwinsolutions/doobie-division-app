@@ -8,60 +8,45 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  const { action, payload } = await req.json();
   const authHeader = req.headers.get('Authorization');
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL'),
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   );
 
-  if (!authHeader || authHeader !== `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
+  // Validate the user's session token for all actions
+  if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authorization header is missing' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+
+  if (userError || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Invalid user session' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+  }
+
+  // Get the user's admin status
+  const { data: adminData } = await supabase
+      .from('admins')
+      .select('is_super_admin')
+      .eq('telegram_id', userData.user.user_metadata.telegram_id)
+      .single();
+
+  if (!adminData) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Not an admin' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
   }
 
   try {
-    const { action, payload } = await req.json();
-    
-    if (action === 'addAdmin') {
-      const { data: userData, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-
-      if (userError || !userData?.user) {
-          return new Response(JSON.stringify({ error: 'Failed to authenticate user.' }), {
-              status: 401,
-              headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          });
-      }
-
-      const { data: adminData } = await supabase
-        .from('admins')
-        .select('is_super_admin')
-        .eq('telegram_id', userData.user.user_metadata.telegram_id)
-        .single();
-    
-      if (!adminData || !adminData.is_super_admin) {
-        return new Response(JSON.stringify({ error: 'Unauthorized: Super admin access required' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        });
-      }
-      
-      const newAdminPayload = {
-        telegram_id: payload.telegram_id,
-        telegram_username: payload.telegram_username, // Add this line
-        is_super_admin: false,
-      };
-      const { error } = await supabase.from('admins').insert([newAdminPayload]);
-      if (error) throw error;
-      
-      return new Response(JSON.stringify({ success: true, message: 'Admin added successfully' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
-
-    // Existing switch statement for other actions
     let result;
     switch (action) {
       case 'addCategory':
@@ -78,6 +63,33 @@ serve(async (req) => {
         break;
       case 'deleteOption':
         result = await supabase.from('options').delete().eq('id', payload.id);
+        break;
+      case 'updateCategory':
+        result = await supabase.from('categories').update({ name: payload.name }).eq('id', payload.id);
+        break;
+      case 'deleteCategory':
+        result = await supabase.from('categories').delete().eq('id', payload.id);
+        break;
+      case 'updateSubcategory':
+        result = await supabase.from('subcategories').update({ name: payload.name }).eq('id', payload.id);
+        break;
+      case 'deleteSubcategory':
+        result = await supabase.from('subcategories').delete().eq('id', payload.id);
+        break;
+      case 'addAdmin':
+        // This action requires super admin privileges
+        if (!adminData.is_super_admin) {
+            return new Response(JSON.stringify({ error: 'Unauthorized: Super admin access required' }), {
+                status: 403,
+                headers: { 'Content-Type': 'application/json', ...corsHeaders },
+            });
+        }
+        const newAdminPayload = {
+            telegram_id: payload.telegram_id,
+            telegram_username: payload.telegram_username,
+            is_super_admin: false,
+        };
+        result = await supabase.from('admins').insert([newAdminPayload]);
         break;
       default:
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
