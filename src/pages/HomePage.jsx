@@ -32,14 +32,15 @@ export default function HomePage() {
           Your premier source for high-quality products. Browse our menu or check out our ordering info.
         </p>
         <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-          <Link 
-            to="/category/all" // This link can go to a page showing all categories
+          <Link
+            to="/category/all"
+            // Add a hover scale effect for a dynamic button
             className="inline-block bg-emerald-600 font-semibold py-3 px-8 rounded-full shadow-lg hover:bg-emerald-700 transition-transform hover:scale-105"
           >
             View Menu
           </Link>
-          <Link 
-            to="/info" // You'll need to create an InfoPage component for this route
+          <Link
+            to="/info"
             className="inline-block bg-gray-200 text-gray-800 font-semibold py-3 px-8 rounded-full shadow-lg hover:bg-gray-300 transition-transform hover:scale-105"
           >
             Ordering Info

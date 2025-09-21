@@ -4,6 +4,7 @@ import Layout from './components/Layout'; // Import the new Layout
 import HomePage from './pages/HomePage';
 import CategoryPage from './pages/CategoryPage';
 import ProductsPage from './pages/ProductsPage';
+import CartPage from './pages/CartPage';
 import AdminPage from './pages/Admin';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="category/:categoryName" element={<CategoryPage />} />
           <Route path="products/:subcategoryName" element={<ProductsPage />} />
+          <Route path="cart" element={<CartPage />} />
           {/* Add an InfoPage route here later */}
         </Route>
 

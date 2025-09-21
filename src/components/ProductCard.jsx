@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 
 export default function ProductCard({ product }) {
   const [isFlipped, setIsFlipped] = useState(false);
+  const { addToCart } = useCart();
 
   // Helper to get the first price from the JSONB 'prices' object
   const getDisplayPrice = () => {
@@ -27,14 +28,19 @@ export default function ProductCard({ product }) {
           </button>
         </div>
 
-        {/* Card Back */}
+         {/* Card Back */}
         <div className="flip-card-back">
           <div className="p-4 flex flex-col flex-grow">
-            <h3 className="text-xl font-bold text-white text-center">{product.name}</h3>
-            <p className="text-sm text-gray-400 my-2 text-center flex-grow">{product.description || ''}</p>
+            {/* ... */}
             <div className="flex justify-between items-center w-full pt-4 mt-auto">
               <span className="text-2xl font-semibold text-emerald-400">{getDisplayPrice()}</span>
-              <button className="btn bg-emerald-600 text-white font-semibold py-2 px-6 rounded-full shadow-md hover:bg-emerald-700">Add</button>
+              {/* Update the button to add to cart */}
+              <button
+                onClick={() => addToCart(product, product.prices, product.options)}
+                className="btn bg-emerald-600 text-white font-semibold py-2 px-6 rounded-full shadow-md hover:bg-emerald-700"
+              >
+                Add to Cart
+              </button>
             </div>
           </div>
           <button onClick={() => setIsFlipped(false)} className="card-flipper">

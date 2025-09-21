@@ -1,10 +1,14 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './index.css' // <-- Add this line
+// src/main.jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import { CartProvider } from './contexts/CartContext'; // Import the provider
+import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+    <CartProvider> {/* Wrap the App with the CartProvider */}
+      <App />
+    </CartProvider>
+  </React.StrictMode>
+);
