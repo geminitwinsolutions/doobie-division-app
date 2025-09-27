@@ -106,7 +106,7 @@ export default function MenuManager() {
 
   return (
     <div>
-      {/* Edit Form Modal */}
+      {/* Edit Form Modal (simplified) */}
       {editingItem && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
           <form onSubmit={handleUpdate} className="space-y-4 bg-gray-800 p-8 rounded-lg shadow-xl w-full max-w-md">

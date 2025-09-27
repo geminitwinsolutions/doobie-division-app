@@ -1,7 +1,7 @@
 // supabase/functions/telegram-auth-start/index.ts
 import { serve } from 'std/http/server';
 
-serve( (_req: Request) => {
+serve((_req: Request) => {
   try {
     const botName = Deno.env.get('TELEGRAM_BOT_NAME');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');

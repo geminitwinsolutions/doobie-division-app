@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from '@supabase/supabase-js';
 
 serve(async (req: Request) => {
+  // ... (top part of the function remains the same)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -73,22 +74,24 @@ serve(async (req: Request) => {
       case 'addProduct':
         result = await supabase.from('products').insert([payload]);
         break;
-      
-      // ** THE FIX IS HERE **
-      // The payload contains `type_id`, so we insert it into the `type_id` column.
       case 'addOption':
         result = await supabase.from('options').insert([{ name: payload.name, type_id: payload.type_id }]);
         break;
-      
       case 'deleteOption':
         result = await supabase.from('options').delete().eq('id', payload.id);
         break;
       case 'updateCategory':
         result = await supabase.from('categories').update({ name: payload.name }).eq('id', payload.id);
         break;
+      
+      // ** THE FIX IS HERE **
       case 'deleteCategory':
+        // First, delete all subcategories belonging to this category
+        await supabase.from('subcategories').delete().eq('category_id', payload.id);
+        // Then, delete the category itself
         result = await supabase.from('categories').delete().eq('id', payload.id);
         break;
+
       case 'updateSubcategory':
         result = await supabase.from('subcategories').update({ name: payload.name }).eq('id', payload.id);
         break;
