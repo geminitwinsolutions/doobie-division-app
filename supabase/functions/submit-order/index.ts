@@ -4,13 +4,37 @@ import { createClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 
 interface OrderItem {
-  id: string; // This should be the product_id (UUID)
+  id: string; 
   name: string;
   quantity: number;
   displayPrice: number;
   selectedOptions: Record<string, string>;
-  product: { id: string }; // Make sure product object with id is passed
+  product: { id: string };
 }
+
+// --- NEW ---
+// Define your delivery areas and the keywords to look for in an address.
+// You can customize this list to match your business's delivery zones.
+const DELIVERY_AREAS: Record<string, string[]> = {
+  "North Zone": ["north", "n.", "uptown"],
+  "South Zone": ["south", "s.", "downtown"],
+  "East Side": ["east", "e."],
+  "West Side": ["west", "w."],
+};
+
+function determineDeliveryArea(address: string): string {
+  const lowerCaseAddress = address.toLowerCase();
+  for (const area in DELIVERY_AREAS) {
+    for (const keyword of DELIVERY_AREAS[area]) {
+      if (lowerCaseAddress.includes(keyword)) {
+        return area;
+      }
+    }
+  }
+  return "Other"; // Default area if no keywords match
+}
+// --- END NEW ---
+
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -21,6 +45,11 @@ serve(async (req: Request) => {
     const { payload } = await req.json();
     const { name: customer_name, address: customer_address, items } = payload;
 
+    // --- NEW ---
+    // Determine the delivery area from the address
+    const deliveryArea = determineDeliveryArea(customer_address);
+    // --- END NEW ---
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
@@ -30,12 +59,10 @@ serve(async (req: Request) => {
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // 1. Calculate the total price from the items array
     const totalPrice = items.reduce((sum: number, item: OrderItem) => {
       return sum + (item.displayPrice * item.quantity);
     }, 0);
 
-    // 2. Insert the main order into the 'orders' table
     const { data: orderData, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
@@ -43,22 +70,21 @@ serve(async (req: Request) => {
         customer_address,
         total_price: totalPrice,
         status: 'pending',
+        delivery_area: deliveryArea, // <-- Save the determined area
       })
       .select()
       .single();
 
     if (orderError) throw orderError;
 
-    // 3. Prepare the line items for the 'order_items' table
     const orderItemsToInsert = items.map((item: OrderItem) => ({
       order_id: orderData.id,
-      product_id: item.product.id, // Ensure your frontend sends product.id
+      product_id: item.product.id,
       quantity: item.quantity,
       price_at_purchase: item.displayPrice,
       selected_options: item.selectedOptions,
     }));
 
-    // 4. Insert all line items
     const { error: itemsError } = await supabaseAdmin
       .from('order_items')
       .insert(orderItemsToInsert);
