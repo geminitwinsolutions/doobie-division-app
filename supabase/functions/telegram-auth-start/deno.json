@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
-    "lib": ["esnext", "dom"],
+    "lib": ["dom", "deno.ns", "deno.window"],
     "strict": true
   },
   "imports": {
-    "https://deno.land/std@0.168.0/http/server.ts": "https://deno.land/std@0.168.0/http/server.ts",
-    "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2"
+    "std/http/server": "https://deno.land/std@0.168.0/http/server.ts",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "../_shared/cors.ts": "../_shared/cors.ts"
   }
 }

@@ -5,9 +5,9 @@ import AdminDashboard from '../components/AdminDashboard';
 // This is the new, simpler Login component
 function TelegramLogin() {
   const handleLogin = () => {
-    // This URL points to a function that starts the Telegram OAuth flow.
-    // We will create this function next.
-    window.location.href = `https://irissqrnhbgkibxciezw.supabase.co/functions/v1/telegram-auth-start`;
+    // This now dynamically reads the URL from your .env file
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    window.location.href = `${supabaseUrl}/functions/v1/telegram-auth-start`;
   };
 
   return (

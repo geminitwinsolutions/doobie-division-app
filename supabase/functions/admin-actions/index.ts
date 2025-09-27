@@ -1,52 +1,64 @@
 // supabase/functions/admin-actions/index.ts
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { serve } from 'std/http/server';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const { action, payload } = await req.json();
-  const authHeader = req.headers.get('Authorization');
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL'),
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  );
+  try {
+    const { action, payload } = await req.json();
+    const authHeader = req.headers.get('Authorization');
 
-  // Validate the user's session token for all actions
-  if (!authHeader) {
+    if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization header is missing' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
-  }
+    }
 
-  const { data: userData, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-  if (userError || !userData?.user) {
+    if (!supabaseUrl || !serviceRoleKey) {
+      return new Response(
+        JSON.stringify({ error: 'Missing Supabase environment variables' }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    const { data: userData, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+
+    if (userError || !userData?.user) {
       return new Response(JSON.stringify({ error: 'Invalid user session' }), {
-          status: 401,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 401,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
-  }
+    }
 
-  // Get the user's admin status
-  const { data: adminData } = await supabase
+    if (!userData.user.user_metadata?.telegram_id) {
+        return new Response(JSON.stringify({ error: 'User metadata is missing Telegram ID' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+    }
+
+    const { data: adminData, error: adminError } = await supabase
       .from('admins')
       .select('is_super_admin')
       .eq('telegram_id', userData.user.user_metadata.telegram_id)
       .single();
 
-  if (!adminData) {
+    if (adminError || !adminData) {
       return new Response(JSON.stringify({ error: 'Unauthorized: Not an admin' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
-  }
+    }
 
-  try {
     let result;
     switch (action) {
       case 'addCategory':
@@ -76,29 +88,30 @@ serve(async (req) => {
       case 'deleteSubcategory':
         result = await supabase.from('subcategories').delete().eq('id', payload.id);
         break;
-      case 'addAdmin':
-        // This action requires super admin privileges
+      case 'addAdmin': {
         if (!adminData.is_super_admin) {
-            return new Response(JSON.stringify({ error: 'Unauthorized: Super admin access required' }), {
-                status: 403,
-                headers: { 'Content-Type': 'application/json', ...corsHeaders },
-            });
+          return new Response(JSON.stringify({ error: 'Unauthorized: Super admin access required' }), {
+            status: 403,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          });
         }
         const newAdminPayload = {
-            telegram_id: payload.telegram_id,
-            telegram_username: payload.telegram_username,
-            is_super_admin: false,
+          telegram_id: payload.telegram_id,
+          telegram_username: payload.telegram_username,
+          is_super_admin: false,
         };
         result = await supabase.from('admins').insert([newAdminPayload]);
         break;
-      default:
+      }
+      default: {
         return new Response(JSON.stringify({ error: 'Invalid action' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
+      }
     }
 
-    if (result.error) {
+    if (result && result.error) {
       return new Response(JSON.stringify({ error: result.error.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -109,8 +122,10 @@ serve(async (req) => {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });

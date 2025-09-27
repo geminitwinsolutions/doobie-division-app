@@ -1,27 +1,41 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// supabase/functions/telegram-webhook/index.ts
+import { serve } from 'std/http/server';
 import { corsHeaders } from '../_shared/cors.ts';
 
-serve(async (req) => {
+// Define a type for the items in the cart
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  selectedOptions: string[];
+}
+
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const { payload } = await req.json();
-  const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-  const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
+  try {
+    const { payload } = await req.json();
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
 
-  const orderItems = payload.items.map(item => {
-    const options = item.selectedOptions.length > 0
-      ? `\n**Options:**\n${item.selectedOptions.map(opt => `  - ${opt}`).join('\n')}`
-      : '';
-    return `
+    if (!botToken || !chatId) {
+      throw new Error('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID environment variables.');
+    }
+
+    const orderItems = payload.items.map((item: OrderItem) => {
+      const options = item.selectedOptions && item.selectedOptions.length > 0
+        ? `\n**Options:**\n${item.selectedOptions.map((opt: string) => `  - ${opt}`).join('\n')}`
+        : '';
+      return `
 **${item.quantity} x ${item.name}**
 **Price:** $${item.price}
 ${options}
-    `;
-  }).join('\n\n');
+      `;
+    }).join('\n\n');
 
-  const orderMessage = `
+    const orderMessage = `
 **New Order Received!**
 ---
 **Customer Name:** ${payload.name}
@@ -29,11 +43,10 @@ ${options}
 ---
 **Order Details:**
 ${orderItems}
-  `;
+    `;
 
-  const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
-  
-  try {
+    const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    
     const response = await fetch(telegramUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -44,8 +57,8 @@ ${orderItems}
       })
     });
 
-    const data = await response.json();
     if (!response.ok) {
+      const data = await response.json();
       console.error('Telegram API error:', data);
       throw new Error('Telegram API failed to send message');
     }
@@ -55,8 +68,8 @@ ${orderItems}
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });
   } catch (error) {
-    console.error('Error in Edge Function:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }
     });

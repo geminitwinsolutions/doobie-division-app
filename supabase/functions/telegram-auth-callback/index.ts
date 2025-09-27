@@ -1,55 +1,74 @@
 // supabase/functions/telegram-auth-callback/index.ts
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from 'std/http/server';
+import { createClient, User, Session } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
-const ADMIN_REDIRECT_URL = Deno.env.get('ADMIN_REDIRECT_URL'); // e.g., http://localhost:5173/admin
+// A specific type for the `properties` object in the generateLink response
+interface LinkProperties {
+    access_token: string;
+    refresh_token: string;
+}
 
-// A simple function to validate the hash from Telegram
-async function validateTelegramHash(authData) {
+// A specific type for the overall `data` object from the generateLink response
+interface GenerateLinkData {
+    properties: LinkProperties;
+    user: User | null;
+    session: Session | null;
+}
+
+// Define a type for the data received from Telegram
+interface TelegramAuthData {
+  id: string;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: string;
+  hash: string;
+  [key: string]: string | undefined;
+}
+
+// A function to validate the hash from Telegram
+async function validateTelegramHash(authData: TelegramAuthData, botToken: string) {
   const dataCheckString = Object.keys(authData)
     .filter(key => key !== 'hash')
     .map(key => `${key}=${authData[key]}`)
     .sort()
     .join('\n');
 
-  const secretKey = new TextEncoder().encode('WebAppData');
-  const secretKeyHash = await crypto.subtle.digest('SHA-256', secretKey);
-  
-  const hmacKey = await crypto.subtle.importKey('raw', secretKeyHash, { name: 'HMAC', hash: 'SHA-256' }, true, ['sign']);
+  const secretKey = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(botToken));
+  const hmacKey = await crypto.subtle.importKey('raw', secretKey, { name: 'HMAC', hash: 'SHA-256' }, true, ['sign']);
   const hmac = await crypto.subtle.sign('HMAC', hmacKey, new TextEncoder().encode(dataCheckString));
-  
   const hex = Array.from(new Uint8Array(hmac)).map(b => b.toString(16).padStart(2, '0')).join('');
-  
+
   return authData.hash === hex;
 }
 
-
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const url = new URL(req.url);
-    const authData = Object.fromEntries(url.searchParams.entries());
+    const adminRedirectUrl = Deno.env.get('ADMIN_REDIRECT_URL');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
 
-    // 1. Validate the hash
-    // NOTE: For production, hash validation is critical for security.
-    // The simple validation below might need adjustment based on official examples.
+    if (!adminRedirectUrl || !supabaseUrl || !serviceRoleKey || !botToken) {
+      throw new Error('Missing one or more required environment variables.');
+    }
     
-    const isValid = await validateTelegramHash(authData);
+    const url = new URL(req.url);
+    const authData = Object.fromEntries(url.searchParams.entries()) as TelegramAuthData;
+
+    const isValid = await validateTelegramHash(authData, botToken);
     if (!isValid) {
       throw new Error("Invalid hash. Telegram data could not be verified.");
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
-    // 2. Check if the user is a registered admin in your `admins` table
     const { data: adminData, error: adminError } = await supabaseAdmin
       .from('admins')
       .select('telegram_id')
@@ -57,25 +76,29 @@ serve(async (req) => {
       .single();
 
     if (adminError || !adminData) {
-      console.error("Admin check error:", adminError);
       return new Response(JSON.stringify({ error: "Unauthorized: You are not a registered admin." }), {
         status: 403,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
-    // 3. The user is a valid admin, so create a session for them
-    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
+    const { data, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
-        email: `${authData.id}@telegram.user`, // Create a dummy email
+        email: `${authData.id}@telegram.user`,
     });
 
     if (sessionError) throw sessionError;
-
-    const { access_token, refresh_token } = sessionData.properties;
     
-    // 4. Redirect the user back to the admin page with the tokens in the URL hash
-    const redirectUrl = new URL(ADMIN_REDIRECT_URL);
+    // ** THE FIX IS HERE **
+    // Cast to 'unknown' first, then to our specific type to safely access properties.
+    const linkData = data as unknown as GenerateLinkData;
+    
+    if (!linkData.properties?.access_token || !linkData.properties?.refresh_token) {
+        throw new Error("Access token or refresh token not found in Supabase response.");
+    }
+    const { access_token, refresh_token } = linkData.properties;
+    
+    const redirectUrl = new URL(adminRedirectUrl);
     redirectUrl.hash = `access_token=${access_token}&refresh_token=${refresh_token}`;
 
     return new Response(null, {
@@ -86,8 +109,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error(error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(errorMessage);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
