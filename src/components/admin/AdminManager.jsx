@@ -1,6 +1,6 @@
 // src/components/admin/AdminManager.jsx
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabaseClient.js';
 
 export default function AdminManager() {
   const [admins, setAdmins] = useState([]);
@@ -17,7 +17,7 @@ export default function AdminManager() {
     const { data, error } = await supabase.from('admins').select('*');
     if (error) {
       console.error("Error fetching admins:", error);
-      alert('Could not fetch admins.');
+      globalThis.alert('Could not fetch admins.'); // <-- Standardized
     } else {
       setAdmins(data || []);
     }
@@ -27,7 +27,7 @@ export default function AdminManager() {
   const handleAddAdmin = async (e) => {
     e.preventDefault();
     if (!telegramId || !telegramUsername) {
-      alert('Please provide both a Telegram ID and a username.');
+      globalThis.alert('Please provide both a Telegram ID and a username.'); // <-- Standardized
       return;
     }
 
@@ -40,9 +40,9 @@ export default function AdminManager() {
     });
 
     if (error) {
-      alert('Error adding admin: ' + error.message);
+      globalThis.alert('Error adding admin: ' + error.message); // <-- Standardized
     } else {
-      alert(`Admin "${telegramUsername}" added successfully!`);
+      globalThis.alert(`Admin "${telegramUsername}" added successfully!`); // <-- Standardized
       setTelegramId('');
       setTelegramUsername('');
       fetchAdmins();

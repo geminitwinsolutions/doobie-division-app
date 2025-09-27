@@ -34,9 +34,9 @@ export default function MenuManager() {
     const { error } = await supabase.functions.invoke('admin-actions', {
       body: { action: 'addCategory', payload: { name: newCategoryName } },
     });
-    if (error) alert(error.message);
+    if (error) globalThis.alert(error.message); // <-- Standardized
     else {
-      alert('Category added!');
+      globalThis.alert('Category added!'); // <-- Standardized
       setNewCategoryName('');
       fetchMenuData();
     }
@@ -47,9 +47,9 @@ export default function MenuManager() {
     const { error } = await supabase.functions.invoke('admin-actions', {
       body: { action: 'addSubcategory', payload: { name: newSubcategoryName, category_id: parentCategoryId } },
     });
-    if (error) alert(error.message);
+    if (error) globalThis.alert(error.message); // <-- Standardized
     else {
-      alert('Subcategory added!');
+      globalThis.alert('Subcategory added!'); // <-- Standardized
       setNewSubcategoryName('');
       setParentCategoryId('');
       fetchMenuData();
@@ -74,9 +74,9 @@ export default function MenuManager() {
       },
     });
 
-    if (error) alert(error.message);
+    if (error) globalThis.alert(error.message); // <-- Standardized
     else {
-      alert('Item updated successfully!');
+      globalThis.alert('Item updated successfully!'); // <-- Standardized
       setEditingItem(null);
       setEditedName('');
       fetchMenuData();
@@ -87,7 +87,7 @@ export default function MenuManager() {
     const isCategory = !item.category_id;
     const itemType = isCategory ? 'category' : 'subcategory';
     
-    if (!globalThis.confirm(`Are you sure you want to delete this ${itemType}: "${item.name}"? This cannot be undone.`)) return;
+    if (!globalThis.confirm(`Are you sure you want to delete this ${itemType}: "${item.name}"? This cannot be undone.`)) return; // <-- Standardized
 
     const action = isCategory ? 'deleteCategory' : 'deleteSubcategory';
 
@@ -95,9 +95,9 @@ export default function MenuManager() {
       body: { action, payload: { id: item.id } },
     });
 
-    if (error) alert(error.message);
+    if (error) globalThis.alert(error.message); // <-- Standardized
     else {
-      alert(`${itemType} deleted successfully!`);
+      globalThis.alert(`${itemType} deleted successfully!`); // <-- Standardized
       fetchMenuData();
     }
   };

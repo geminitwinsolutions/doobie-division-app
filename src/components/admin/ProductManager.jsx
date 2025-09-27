@@ -31,7 +31,7 @@ export default function ProductManager() {
     setLoading(true);
     const { data: productsData } = await supabase.from('products').select(`*, subcategories(name)`).order('created_at', { ascending: false });
     const { data: subcategoriesData } = await supabase.from('subcategories').select('*');
-    // ** FIX IS HERE: Join 'options' with 'option_types' to get the type name for display **
+    // FIX: Join 'options' with 'option_types' to get the type name for display
     const { data: optionsData } = await supabase
       .from('options')
       .select(`id, name, option_types ( name )`);
@@ -153,7 +153,7 @@ export default function ProductManager() {
               <input type="number" placeholder="Price" value={price.value} onChange={(e) => handlePriceChange(index, 'value', e.target.value)} className="input-field w-1/2" />
             </div>
           ))}
-          {/* ** FIX IS HERE ** This button does not submit the form */}
+          {/* This button does not submit the form */}
           <button type="button" onClick={addPriceField} className="text-emerald-400 text-sm">+ Add Price Tier</button>
         </div>
         <div>
@@ -162,7 +162,7 @@ export default function ProductManager() {
             {options.map(opt => (
               <label key={opt.id} className="flex items-center space-x-2">
                 <input type="checkbox" checked={selectedOptions.includes(opt.id)} onChange={() => handleOptionToggle(opt.id)} className="form-checkbox" />
-                {/* ** FIX IS HERE: Use the joined option_types name for display ** */}
+                {/* FIX: Use the joined option_types name for display */}
                 <span>{opt.name} ({opt.option_types?.name})</span>
               </label>
             ))}
@@ -175,7 +175,7 @@ export default function ProductManager() {
             <option value="split">Split Choice (Checkboxes)</option>
           </select>
         </div>
-        {/* ** FIX IS HERE ** This button submits the form */}
+        {/* This button submits the form */}
         <button type="submit" className="px-6 py-2 bg-green-600 rounded-lg hover:bg-green-700">Add Product</button>
       </form>
 

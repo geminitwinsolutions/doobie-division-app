@@ -5,12 +5,11 @@ import { supabase } from '../../lib/supabaseClient.js';
 const DELIVERY_AREAS = ["North Zone", "South Zone", "East Side", "West Side", "Other"];
 
 function OrderCard({ order, drivers, onAssign }) {
-  // ... (OrderCard component remains the same)
   const [selectedDriverId, setSelectedDriverId] = useState('');
 
   const handleAssignClick = () => {
     if (!selectedDriverId) {
-      alert('Please select a driver to assign.');
+      globalThis.alert('Please select a driver to assign.');
       return;
     }
     onAssign(order.id, selectedDriverId);
@@ -112,7 +111,6 @@ export default function DeliveriesManager() {
     }
   };
   
-  // ** THE FIX IS HERE **
   // We now call the Edge Function to get the list of drivers securely.
   const fetchDrivers = async () => {
     const { data, error } = await supabase.functions.invoke('admin-actions', {
@@ -135,9 +133,9 @@ export default function DeliveriesManager() {
     });
 
     if (error) {
-      alert(`Error assigning order: ${error.message}`);
+      globalThis.alert(`Error assigning order: ${error.message}`);
     } else {
-      alert(`Order #${orderId} has been assigned!`);
+      globalThis.alert(`Order #${orderId} has been assigned!`);
       fetchOrders();
     }
   };
