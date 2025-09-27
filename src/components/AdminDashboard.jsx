@@ -5,9 +5,20 @@ import OptionManager from './admin/OptionManager.jsx';
 import MenuManager from './admin/MenuManager.jsx';
 import AdminManager from './admin/AdminManager.jsx';
 import DeliveriesManager from './admin/DeliveriesManager.jsx'; // 1. Import the new component
+import { supabase } from '../lib/supabaseClient.js'; // 5. Import supabase
 
 export default function AdminDashboard({ user }) {
   const [activeTab, setActiveTab] = useState('deliveries'); // 2. Default to deliveries
+
+  // 6. Define the logout function
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error logging out:', error);
+      globalThis.alert('There was an error logging out. Check the console.');
+    }
+    // The AdminPage handles state changes after this.
+  };
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -30,7 +41,17 @@ export default function AdminDashboard({ user }) {
     <div className="container mx-auto p-4 text-white">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Admin Panel</h1>
-        <p className="text-gray-300">Welcome, {user.user_metadata?.first_name || 'Admin'}</p>
+        {/* 7. Group the welcome and logout elements */}
+        <div className="flex items-center space-x-4"> 
+          <p className="text-gray-300">Welcome, {user.user_metadata?.first_name || 'Admin'}</p>
+          <button 
+            type="button" // <--- FIX: Added type="button"
+            onClick={handleLogout} 
+            className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Tab Navigation */}

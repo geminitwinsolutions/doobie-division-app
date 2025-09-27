@@ -3,7 +3,7 @@ import { serve } from 'std/http/server';
 
 serve((_req: Request) => {
   try {
-    const botName = Deno.env.get('TELEGRAM_BOT_NAME');
+    const botName = Deno.env.get('TELEGRAM_BOT_NAME'); // <--- Requires this environment variable
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
 
     if (!botName || !supabaseUrl) {

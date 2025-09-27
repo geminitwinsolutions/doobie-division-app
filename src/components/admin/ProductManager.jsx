@@ -31,7 +31,10 @@ export default function ProductManager() {
     setLoading(true);
     const { data: productsData } = await supabase.from('products').select(`*, subcategories(name)`).order('created_at', { ascending: false });
     const { data: subcategoriesData } = await supabase.from('subcategories').select('*');
-    const { data: optionsData } = await supabase.from('options').select('*');
+    // ** FIX IS HERE: Join 'options' with 'option_types' to get the type name for display **
+    const { data: optionsData } = await supabase
+      .from('options')
+      .select(`id, name, option_types ( name )`);
     
     setProducts(productsData || []);
     setSubcategories(subcategoriesData || []);
@@ -66,7 +69,7 @@ export default function ProductManager() {
       const fileName = `${Date.now()}_${imageFile.name}`;
       const { data, error } = await supabase.storage.from('product-images').upload(fileName, imageFile);
       if (error) {
-        alert('Error uploading image: ' + error.message);
+        globalThis.alert('Error uploading image: ' + error.message);
         return;
       }
       // Get the public URL for the uploaded image
@@ -103,9 +106,9 @@ export default function ProductManager() {
     });
 
     if (invokeError) {
-      alert('Error adding product: ' + invokeError.message);
+      globalThis.alert('Error adding product: ' + invokeError.message);
     } else {
-      alert('Product added successfully!');
+      globalThis.alert('Product added successfully!');
       fetchData(); // Refresh data
       // Reset form fields
       setName('');
@@ -159,7 +162,8 @@ export default function ProductManager() {
             {options.map(opt => (
               <label key={opt.id} className="flex items-center space-x-2">
                 <input type="checkbox" checked={selectedOptions.includes(opt.id)} onChange={() => handleOptionToggle(opt.id)} className="form-checkbox" />
-                <span>{opt.name} ({opt.type})</span>
+                {/* ** FIX IS HERE: Use the joined option_types name for display ** */}
+                <span>{opt.name} ({opt.option_types?.name})</span>
               </label>
             ))}
           </div>

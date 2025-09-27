@@ -1,13 +1,11 @@
 // src/components/TelegramLoginButton.jsx
 
 export default function TelegramLoginButton() {
-  const handleLogin = () => {
-    // Dynamically get the Supabase URL from your .env file
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    
-    // This will redirect the user to a Supabase function that handles the Telegram auth
-    globalThis.location.href = `${supabaseUrl}/functions/v1/telegram-auth-start`;
-  };
+    // From src/pages/Admin.jsx (TelegramLogin function):
+    const handleLogin = () => {
+       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        globalThis.location.href = `${supabaseUrl}/functions/v1/telegram-auth-start`;
+    };
 
   return (
     <div className="bg-gray-800 p-8 rounded-lg shadow-lg text-center">

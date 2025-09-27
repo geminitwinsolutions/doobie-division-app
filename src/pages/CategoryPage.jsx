@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react'; // <--- ADDED
 import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient.js';
 
 export default function CategoryPage() {
   const { categoryName } = useParams();

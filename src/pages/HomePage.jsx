@@ -1,6 +1,6 @@
-
+import { useState, useEffect } from 'react'; // <--- ADDED
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient.js';
 
 export default function HomePage() {
   const [deal, setDeal] = useState(null);

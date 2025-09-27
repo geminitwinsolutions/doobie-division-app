@@ -2,6 +2,7 @@
 
 import { useCart } from '../contexts/CartContext.jsx';
 import { supabase } from '../lib/supabaseClient.js';
+import { useState } from 'react'; // <--- FIX: Add missing useState import
 
 export default function CartPage() {
   const { cart, clearCart } = useCart();

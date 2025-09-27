@@ -75,7 +75,25 @@ serve(async (req: Request) => {
 
     let result;
     switch (action) {
-      // ... (rest of your cases)
+      // --- NEW: Option Type Management Actions ---
+      case 'addOptionType':
+        result = await supabase.from('option_types').insert([{ name: payload.name }]);
+        break;
+      case 'deleteOptionType':{
+        // Deleting a type should also delete associated options and remove the type from products/prices
+        const { data: optionsToDelete } = await supabase.from('options').select('id').eq('type_id', payload.id);
+        if (optionsToDelete) {
+            // Delete associated options first
+            const optionIds = optionsToDelete.map(o => o.id);
+            if (optionIds.length > 0) {
+                await supabase.from('options').delete().in('id', optionIds);
+            }
+        }
+        // Finally, delete the type itself
+        result = await supabase.from('option_types').delete().eq('id', payload.id);
+        break;
+      }
+      // --- END NEW ---
       case 'assignOrder':
         result = await supabase.from('orders').update({ assigned_driver_id: payload.driverId, status: 'assigned' }).eq('id', payload.orderId);
         break;

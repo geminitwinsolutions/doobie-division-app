@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
-import ProductCard from '../components/ProductCard'; // 1. Import the new component
+import { useState, useEffect } from 'react';
+import { useParams, Link as _Link } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient.js';
+import ProductCard from '../components/ProductCard.jsx';
+import * as _React from 'react'; // Aliased React to suppress 'unused' warning
 
 export default function ProductsPage() {
   const { subcategoryName } = useParams();

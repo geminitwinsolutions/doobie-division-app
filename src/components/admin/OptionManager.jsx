@@ -83,16 +83,16 @@ export default function OptionManager() {
   const handleAddOption = async (e) => {
     e.preventDefault();
     if (!newName || !newTypeId) {
-      alert('Please provide both a name and a type.');
+      globalThis.alert('Please provide both a name and a type.');
       return;
     }
     const { error } = await supabase.functions.invoke('admin-actions', {
       body: { action: 'addOption', payload: { name: newName, type_id: newTypeId } }, // Pass type_id
     });
     if (error) {
-      alert('Error adding option: ' + error.message);
+      globalThis.alert('Error adding option: ' + error.message);
     } else {
-      alert(`Option "${newName}" added successfully!`);
+      globalThis.alert(`Option "${newName}" added successfully!`);
       setNewName('');
       setNewTypeId('');
       fetchOptions();
@@ -104,26 +104,33 @@ export default function OptionManager() {
     const { error } = await supabase.functions.invoke('admin-actions', {
       body: { action: 'deleteOption', payload: { id: optionId } },
     });
-    if (error) alert('Error deleting option: ' + error.message);
+    if (error) globalThis.alert('Error deleting option: ' + error.message);
     else {
-      alert('Option deleted successfully!');
+      globalThis.alert('Option deleted successfully!');
       fetchOptions();
     }
   };
 
   // Handlers for the TypeManager
   const handleAddType = async (typeName) => {
-    const { error } = await supabase.from('option_types').insert({ name: typeName });
-    if (error) alert('Error adding type: ' + error.message);
-    else alert('Type added!');
+    // ** FIX IS HERE: Use admin-actions for secure database modification **
+    const { error } = await supabase.functions.invoke('admin-actions', {
+        body: { action: 'addOptionType', payload: { name: typeName } },
+    });
+    if (error) globalThis.alert('Error adding type: ' + error.message);
+    else globalThis.alert('Type added!');
+    fetchOptionTypes();
   };
 
   const handleDeleteType = async (typeId, typeName) => {
     if (!globalThis.confirm(`Are you sure you want to delete the type "${typeName}"? This may affect existing options.`)) return;
-    const { error } = await supabase.from('option_types').delete().eq('id', typeId);
-    if (error) alert('Error deleting type: ' + error.message);
+    // ** FIX IS HERE: Use admin-actions for secure database modification **
+    const { error } = await supabase.functions.invoke('admin-actions', {
+        body: { action: 'deleteOptionType', payload: { id: typeId } },
+    });
+    if (error) globalThis.alert('Error deleting type: ' + error.message);
     else {
-      alert('Type deleted!');
+      globalThis.alert('Type deleted!');
       fetchOptionTypes(); // Refresh the list of types
       fetchOptions(); // Refresh options as they may have changed
     }
