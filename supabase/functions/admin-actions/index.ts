@@ -4,7 +4,6 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { createClient } from '@supabase/supabase-js';
 
 serve(async (req: Request) => {
-  // ... (top part of the function remains the same)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -60,8 +59,23 @@ serve(async (req: Request) => {
       });
     }
 
+    // --- NEW: Handle getDrivers action separately ---
+    if (action === 'getDrivers') {
+      const { data: drivers, error } = await supabase
+        .from('admins')
+        .select('id, full_name, telegram_username')
+        .eq('role', 'driver');
+
+      if (error) throw error;
+      return new Response(JSON.stringify(drivers), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+    // --- END NEW ---
+
     let result;
     switch (action) {
+      // ... (rest of your cases)
       case 'assignOrder':
         result = await supabase.from('orders').update({ assigned_driver_id: payload.driverId, status: 'assigned' }).eq('id', payload.orderId);
         break;
@@ -83,19 +97,21 @@ serve(async (req: Request) => {
       case 'updateCategory':
         result = await supabase.from('categories').update({ name: payload.name }).eq('id', payload.id);
         break;
-      
-      // ** THE FIX IS HERE **
-      case 'deleteCategory':
-        // First, delete all subcategories belonging to this category
-        await supabase.from('subcategories').delete().eq('category_id', payload.id);
-        // Then, delete the category itself
+      case 'deleteCategory':{
+        const { data: subcats } = await supabase.from('subcategories').select('id').eq('category_id', payload.id);
+        if (subcats && subcats.length > 0) {
+          const subcatIds = subcats.map(s => s.id);
+          await supabase.from('products').delete().in('subcategory_id', subcatIds);
+          await supabase.from('subcategories').delete().in('id', subcatIds);
+        }
         result = await supabase.from('categories').delete().eq('id', payload.id);
         break;
-
+      }
       case 'updateSubcategory':
         result = await supabase.from('subcategories').update({ name: payload.name }).eq('id', payload.id);
         break;
       case 'deleteSubcategory':
+        await supabase.from('products').delete().eq('subcategory_id', payload.id);
         result = await supabase.from('subcategories').delete().eq('id', payload.id);
         break;
       case 'addAdmin': {
@@ -114,7 +130,7 @@ serve(async (req: Request) => {
         break;
       }
       default: {
-        return new Response(JSON.stringify({ error: 'Invalid action' }), {
+        return new Response(JSON.stringify({ error: `Invalid action: ${action}` }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });

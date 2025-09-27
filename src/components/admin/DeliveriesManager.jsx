@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient.js';
 const DELIVERY_AREAS = ["North Zone", "South Zone", "East Side", "West Side", "Other"];
 
 function OrderCard({ order, drivers, onAssign }) {
+  // ... (OrderCard component remains the same)
   const [selectedDriverId, setSelectedDriverId] = useState('');
 
   const handleAssignClick = () => {
@@ -18,13 +19,11 @@ function OrderCard({ order, drivers, onAssign }) {
   return (
     <div className="bg-gray-900 p-4 rounded-lg shadow-md">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-        {/* Order Details */}
         <div>
           <p className="font-bold text-emerald-400">Order #{order.id}</p>
           <p className="text-gray-300"><strong>Customer:</strong> {order.customer_name}</p>
           <p className="text-gray-300"><strong>Address:</strong> {order.customer_address}</p>
         </div>
-        {/* Order Items */}
         <div>
           <p className="font-semibold text-gray-300">Items:</p>
           <ul className="list-disc list-inside text-gray-400">
@@ -35,13 +34,11 @@ function OrderCard({ order, drivers, onAssign }) {
             ))}
           </ul>
         </div>
-        {/* Area and Total */}
         <div>
-          <p className="font-bold text-gray-300">Area</p>
-          <p className="text-white font-semibold">{order.delivery_area}</p>
-          <p className="font-bold text-lg text-white mt-2">Total: ${order.total_price}</p>
+            <p className="font-bold text-gray-300">Area</p>
+            <p className="text-white font-semibold">{order.delivery_area}</p>
+            <p className="font-bold text-lg text-white mt-2">Total: ${order.total_price}</p>
         </div>
-        {/* Status and Assignment */}
         <div className="flex flex-col justify-between items-end">
           <span className={`text-xs font-bold px-2 py-1 inline-block rounded-full ${
             order.status === 'pending' ? 'bg-yellow-500 text-black' : 'bg-green-500 text-white'
@@ -115,11 +112,12 @@ export default function DeliveriesManager() {
     }
   };
   
+  // ** THE FIX IS HERE **
+  // We now call the Edge Function to get the list of drivers securely.
   const fetchDrivers = async () => {
-    const { data, error } = await supabase
-      .from('admins')
-      .select('id, full_name, telegram_username')
-      .eq('role', 'driver');
+    const { data, error } = await supabase.functions.invoke('admin-actions', {
+        body: { action: 'getDrivers' }
+    });
 
     if (error) {
       console.error("Error fetching drivers:", error);
@@ -128,7 +126,6 @@ export default function DeliveriesManager() {
     }
   };
 
-  // --- THIS IS THE FINAL UPDATE ---
   const handleAssignOrder = async (orderId, driverId) => {
     const { error } = await supabase.functions.invoke('admin-actions', {
       body: {
@@ -141,11 +138,9 @@ export default function DeliveriesManager() {
       alert(`Error assigning order: ${error.message}`);
     } else {
       alert(`Order #${orderId} has been assigned!`);
-      // Refresh the orders list to show the status change
       fetchOrders();
     }
   };
-  // --- END UPDATE ---
 
   if (loading) return <p className="text-gray-400">Loading orders...</p>;
 
