@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+// src/components/admin/ProductManager.jsx
+import { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabaseClient.js';
 
 export default function ProductManager() {
   // Data state
-  const [products, setProducts] = useState([]);
+  const [_products, setProducts] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [options, setOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +122,7 @@ export default function ProductManager() {
     <div>
       {/* Add Product Form */}
       <form onSubmit={handleSubmit} className="space-y-6 bg-gray-900 p-6 rounded-lg mb-8">
+        {/* ... form fields ... */}
         <div>
           <label className="block text-sm font-medium text-gray-300">Product Name</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="input-field" required />
@@ -148,6 +150,7 @@ export default function ProductManager() {
               <input type="number" placeholder="Price" value={price.value} onChange={(e) => handlePriceChange(index, 'value', e.target.value)} className="input-field w-1/2" />
             </div>
           ))}
+          {/* ** FIX IS HERE ** This button does not submit the form */}
           <button type="button" onClick={addPriceField} className="text-emerald-400 text-sm">+ Add Price Tier</button>
         </div>
         <div>
@@ -168,6 +171,7 @@ export default function ProductManager() {
             <option value="split">Split Choice (Checkboxes)</option>
           </select>
         </div>
+        {/* ** FIX IS HERE ** This button submits the form */}
         <button type="submit" className="px-6 py-2 bg-green-600 rounded-lg hover:bg-green-700">Add Product</button>
       </form>
 

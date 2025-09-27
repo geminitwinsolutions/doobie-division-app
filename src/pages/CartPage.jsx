@@ -1,7 +1,7 @@
 // src/pages/CartPage.jsx
-import React, { useState } from 'react';
-import { useCart } from '../contexts/CartContext';
-import { supabase } from '../lib/supabaseClient';
+
+import { useCart } from '../contexts/CartContext.jsx';
+import { supabase } from '../lib/supabaseClient.js';
 
 export default function CartPage() {
   const { cart, clearCart } = useCart();
@@ -25,7 +25,7 @@ export default function CartPage() {
     };
 
     // Invoke the Supabase Edge Function
-    const { error } = await supabase.functions.invoke('process-telegram-order', {
+    const { error } = await supabase.functions.invoke('submit-order', {
       body: { payload: orderPayload }
     });
 
