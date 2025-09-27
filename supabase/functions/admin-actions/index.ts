@@ -38,7 +38,7 @@ serve(async (req: Request) => {
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
-
+    
     if (!userData.user.user_metadata?.telegram_id) {
         return new Response(JSON.stringify({ error: 'User metadata is missing Telegram ID' }), {
             status: 403,
@@ -48,7 +48,7 @@ serve(async (req: Request) => {
 
     const { data: adminData, error: adminError } = await supabase
       .from('admins')
-      .select('is_super_admin')
+      .select('role')
       .eq('telegram_id', userData.user.user_metadata.telegram_id)
       .single();
 
@@ -61,31 +61,25 @@ serve(async (req: Request) => {
 
     let result;
     switch (action) {
-      // --- NEW CASE ADDED HERE ---
       case 'assignOrder':
-        result = await supabase
-          .from('orders')
-          .update({
-            assigned_driver_id: payload.driverId,
-            status: 'assigned',
-          })
-          .eq('id', payload.orderId);
+        result = await supabase.from('orders').update({ assigned_driver_id: payload.driverId, status: 'assigned' }).eq('id', payload.orderId);
         break;
-      // --- END NEW CASE ---
-
       case 'addCategory':
         result = await supabase.from('categories').insert([payload]);
         break;
-      // ... (rest of the cases remain the same)
       case 'addSubcategory':
         result = await supabase.from('subcategories').insert([payload]);
         break;
       case 'addProduct':
         result = await supabase.from('products').insert([payload]);
         break;
+      
+      // ** THE FIX IS HERE **
+      // The payload contains `type_id`, so we insert it into the `type_id` column.
       case 'addOption':
-        result = await supabase.from('options').insert([payload]);
+        result = await supabase.from('options').insert([{ name: payload.name, type_id: payload.type_id }]);
         break;
+      
       case 'deleteOption':
         result = await supabase.from('options').delete().eq('id', payload.id);
         break;
@@ -102,7 +96,7 @@ serve(async (req: Request) => {
         result = await supabase.from('subcategories').delete().eq('id', payload.id);
         break;
       case 'addAdmin': {
-        if (!adminData.is_super_admin) {
+        if (adminData.role !== 'super_admin') {
           return new Response(JSON.stringify({ error: 'Unauthorized: Super admin access required' }), {
             status: 403,
             headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -111,7 +105,7 @@ serve(async (req: Request) => {
         const newAdminPayload = {
           telegram_id: payload.telegram_id,
           telegram_username: payload.telegram_username,
-          is_super_admin: false,
+          role: 'admin',
         };
         result = await supabase.from('admins').insert([newAdminPayload]);
         break;
