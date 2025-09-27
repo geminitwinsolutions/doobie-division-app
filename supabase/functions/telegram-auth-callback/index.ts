@@ -51,6 +51,9 @@ serve(async (req: Request) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
 
+    // DEBUGGING ADDED: Log the redirect URL to the Supabase logs
+    console.log(`DEBUG: ADMIN_REDIRECT_URL is set to: ${adminRedirectUrl}`);
+
     if (!adminRedirectUrl || !supabaseUrl || !serviceRoleKey || !botToken) {
       throw new Error('Missing one or more required environment variables.');
     }
