@@ -61,9 +61,22 @@ serve(async (req: Request) => {
 
     let result;
     switch (action) {
+      // --- NEW CASE ADDED HERE ---
+      case 'assignOrder':
+        result = await supabase
+          .from('orders')
+          .update({
+            assigned_driver_id: payload.driverId,
+            status: 'assigned',
+          })
+          .eq('id', payload.orderId);
+        break;
+      // --- END NEW CASE ---
+
       case 'addCategory':
         result = await supabase.from('categories').insert([payload]);
         break;
+      // ... (rest of the cases remain the same)
       case 'addSubcategory':
         result = await supabase.from('subcategories').insert([payload]);
         break;

@@ -4,7 +4,6 @@ import { supabase } from '../../lib/supabaseClient.js';
 
 const DELIVERY_AREAS = ["North Zone", "South Zone", "East Side", "West Side", "Other"];
 
-// --- NEW: A sub-component for handling a single order ---
 function OrderCard({ order, drivers, onAssign }) {
   const [selectedDriverId, setSelectedDriverId] = useState('');
 
@@ -78,16 +77,14 @@ function OrderCard({ order, drivers, onAssign }) {
   );
 }
 
-
 export default function DeliveriesManager() {
   const [allOrders, setAllOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
-  const [drivers, setDrivers] = useState([]); // <-- New state for drivers
+  const [drivers, setDrivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('All');
 
   useEffect(() => {
-    // Fetch both orders and drivers when the component loads
     const initialFetch = async () => {
         setLoading(true);
         await Promise.all([fetchOrders(), fetchDrivers()]);
@@ -118,12 +115,11 @@ export default function DeliveriesManager() {
     }
   };
   
-  // --- NEW: Function to fetch drivers ---
   const fetchDrivers = async () => {
     const { data, error } = await supabase
       .from('admins')
       .select('id, full_name, telegram_username')
-      .eq('role', 'driver'); // Fetch users with the 'driver' role
+      .eq('role', 'driver');
 
     if (error) {
       console.error("Error fetching drivers:", error);
@@ -131,14 +127,25 @@ export default function DeliveriesManager() {
       setDrivers(data || []);
     }
   };
-  // --- END NEW ---
 
-  // --- NEW: Handler for assigning an order ---
-  const handleAssignOrder =  (orderId, driverId) => {
-    alert(`Assigning Order #${orderId} to Driver ID ${driverId}. (Backend next!)`);
-    // The logic to call the 'assignOrder' Edge Function will go here in the next step.
+  // --- THIS IS THE FINAL UPDATE ---
+  const handleAssignOrder = async (orderId, driverId) => {
+    const { error } = await supabase.functions.invoke('admin-actions', {
+      body: {
+        action: 'assignOrder',
+        payload: { orderId, driverId },
+      },
+    });
+
+    if (error) {
+      alert(`Error assigning order: ${error.message}`);
+    } else {
+      alert(`Order #${orderId} has been assigned!`);
+      // Refresh the orders list to show the status change
+      fetchOrders();
+    }
   };
-  // --- END NEW ---
+  // --- END UPDATE ---
 
   if (loading) return <p className="text-gray-400">Loading orders...</p>;
 
